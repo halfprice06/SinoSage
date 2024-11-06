@@ -1,4 +1,4 @@
-# HanziHero
+# SinoSage (name in progress)
 
 A powerful Chrome extension that helps users learn Chinese by providing instant translations, pinyin, pronunciation, and stroke order practice for Chinese characters.
 

@@ -43,7 +43,7 @@ A powerful Chrome extension that helps users learn Chinese by providing instant 
 
 ## Technical Details
 
-- Powered by OpenAI's GPT-4 for accurate translations
+- Powered by OpenAI's GPT-4o for accurate translations
 - Uses [HanziWriter](https://hanziwriter.org/) for stroke order animations and writing practice
 - Implements character-by-character alignment for accurate translations
 - Supports both simplified and traditional Chinese characters

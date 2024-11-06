@@ -43,10 +43,17 @@ A powerful Chrome extension that helps users learn Chinese by providing instant 
 
 ## Technical Details
 
-- Uses HanziWriter for stroke order animations
+- Powered by OpenAI's GPT-4 for accurate translations
+- Uses [HanziWriter](https://hanziwriter.org/) for stroke order animations and writing practice
 - Implements character-by-character alignment for accurate translations
 - Supports both simplified and traditional Chinese characters
 - Handles tone marks and pinyin conversion automatically
+
+## Credits
+
+- Stroke order animations and writing practice powered by [HanziWriter](https://github.com/chanind/hanzi-writer), released under MIT License
+- Character data derived from the Make Me A Hanzi project, which uses data from Arphic Technology fonts
+- Translation and audio services provided by OpenAI
 
 ## Contributing
 
@@ -54,4 +61,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Third-Party Licenses
+
+- **HanziWriter**: MIT License
+- **Character Data**: The character data used by HanziWriter comes from the Make Me A Hanzi project, which extracted data from fonts by Arphic Technology. This data is licensed under the Arphic Public License.

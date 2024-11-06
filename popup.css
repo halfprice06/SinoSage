@@ -48,3 +48,79 @@ button {
     flex-wrap: wrap;
     justify-content: space-between;
 }
+
+.api-key-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px;
+}
+
+#apiKey {
+  width: 250px; /* Set a fixed width */
+  padding: 5px;
+  margin: 5px 0;
+  box-sizing: border-box;
+}
+
+#saveApiKey {
+  padding: 5px 10px;
+}
+
+#statusMessage {
+  text-align: center;
+  color: green;
+  margin-top: 10px;
+}
+
+/* Ensure the HTML and body take full width */
+html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Center the popup content */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Style the popup container */
+.popup-container {
+    width: 300px; /* Adjust the width as needed */
+    padding: 20px;
+    background-color: white;
+    box-sizing: border-box;
+}
+
+/* Style for the API key container */
+.api-key-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* Allow children to stretch to full width */
+    margin: 10px 0;
+}
+
+/* Style the input field */
+#apiKey {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
+
+/* Style the save button */
+#saveApiKey {
+    padding: 10px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+/* Center the status message */
+#statusMessage {
+    text-align: center;
+    color: green;
+    margin-top: 10px;
+}

@@ -15,7 +15,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["contentScript.js"],
+      "js": ["lib/hanzi-writer.min.js", "contentScript.js"],
       "css": ["contentScript.css"]
     }
   ],
@@ -27,7 +27,10 @@
     "default_title": "Toggle Plugin"
   },
   "web_accessible_resources": [{
-    "resources": ["translation_popup.css"],
+    "resources": [
+      "lib/hanzi-writer.min.js",
+      "translation_popup.css"
+    ],
     "matches": ["<all_urls>"]
   }]
 } 

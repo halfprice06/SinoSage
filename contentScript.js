@@ -5,6 +5,7 @@ const MIN_ITEMS_PER_PAGE = 3;      // Minimum items per page
 const DEFAULT_ITEMS_PER_PAGE = MIN_ITEMS_PER_PAGE;  // Default to minimum items per page
 const MAX_CHARS = 150;  // Maximum number of characters allowed for translation
 const CHINESE_REGEX = /[\u4e00-\u9fff]/;  // Unicode range for Chinese characters
+const HANZI_WRITER_URL = chrome.runtime.getURL('lib/hanzi-writer.min.js');
 
 let currentPage = 0;
 let allTuples = [];
@@ -86,9 +87,11 @@ function positionPopup(popup, rect) {
     leftPosition = Math.min(leftPosition, viewportWidth - popupWidth - 10); // At least 10px from right edge
     
     // Position vertically below the selection
-    let topPosition = rect.bottom + window.scrollY + 5;
-    
-    // Apply the positioning
+    // Add the current scroll position since we're using fixed positioning
+    let topPosition = rect.bottom + 5;
+
+    // Set fixed positioning
+    popup.style.position = 'fixed';
     popup.style.left = `${leftPosition}px`;
     popup.style.top = `${topPosition}px`;
 }
@@ -104,6 +107,9 @@ function createPopup(selectedText, rect) {
     let popup = document.createElement('div');
     popup.id = 'translationPopup';
     popup.className = 'translation-popup';
+    
+    // Set fixed positioning immediately
+    popup.style.position = 'fixed';
 
     popup.innerHTML = `
         <div id="translationDetails">
@@ -234,6 +240,12 @@ function createPopup(selectedText, rect) {
             const charSpan = document.createElement('span');
             charSpan.className = 'chinese-char';
             charSpan.textContent = char;
+            
+            // Add click handler for stroke order
+            charSpan.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showStrokeOrderPopup(char, e.target.getBoundingClientRect());
+            });
             
             const pinyinSpan = document.createElement('span');
             pinyinSpan.className = 'pinyin';
@@ -393,18 +405,23 @@ function createPopup(selectedText, rect) {
     // Modify the document click handler to properly check for pagination clicks
     function handleDocumentClick(event) {
         const popup = document.getElementById('translationPopup');
+        const strokePopup = document.getElementById('strokeOrderPopup');
+        
         if (!popup) return;
 
-        // Check if click is on pagination buttons or their parent
-        const isPaginationClick = event.target.classList.contains('nav-button') || 
-                                event.target.closest('.pagination-controls');
-        
-        // Don't close if clicking inside popup or pagination
-        if (popup.contains(event.target) || isPaginationClick) {
+        // Don't close if clicking inside popups
+        if (popup.contains(event.target) || 
+            (strokePopup && strokePopup.contains(event.target))) {
             return;
         }
 
-        // Otherwise, close popup and cleanup
+        // Clean up stroke order writer if it exists
+        if (strokePopup) {
+            window.postMessage({ type: 'cleanupWriter' }, '*');
+            strokePopup.remove();
+        }
+
+        // Remove the main popup
         popup.remove();
         document.removeEventListener('mousedown', handleDocumentClick);
         // Reset pagination state
@@ -635,3 +652,161 @@ function updateNavigation(currentIndex, totalPages) {
         }
     };
 }
+
+function createHanziWriter(elementId, character, options) {
+    return new Promise((resolve, reject) => {
+        const target = document.getElementById(elementId);
+        if (!target) {
+            reject(new Error('Target element not found'));
+            return;
+        }
+
+        try {
+            const writer = HanziWriter.create(elementId, character, options);
+            resolve(writer);
+        } catch (error) {
+            console.error('Error creating HanziWriter:', error);
+            reject(error);
+        }
+    });
+}
+
+async function showStrokeOrderPopup(character, rect) {
+    try {
+        let existingPopup = document.getElementById('strokeOrderPopup');
+        if (existingPopup) {
+            existingPopup.remove();
+        }
+
+        const popup = document.createElement('div');
+        popup.id = 'strokeOrderPopup';
+        popup.className = 'stroke-order-popup';
+        
+        // Add a close button
+        const closeButton = document.createElement('button');
+        closeButton.className = 'stroke-order-close-button';
+        closeButton.innerHTML = '×';
+        closeButton.style.cssText = `
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+        `;
+        
+        const content = document.createElement('div');
+        content.className = 'stroke-order-content';
+        
+        content.innerHTML = `
+            <div id="stroke-order-writer" style="width: 200px; height: 200px;"></div>
+            <div class="stroke-order-controls">
+                <button class="stroke-order-button animate-button">Animate Strokes</button>
+                <button class="stroke-order-button quiz-button">Practice Writing</button>
+            </div>
+        `;
+        
+        popup.appendChild(closeButton);
+        popup.appendChild(content);
+        document.body.appendChild(popup);
+
+        // Position the popup
+        const popupRect = popup.getBoundingClientRect();
+        const left = Math.min(
+            rect.left,
+            window.innerWidth - popupRect.width - 20
+        );
+        const top = rect.bottom + 10;
+
+        popup.style.left = `${left}px`;
+        popup.style.top = `${top}px`;
+
+        // Create the writer instance
+        const writer = await createHanziWriter('stroke-order-writer', character, {
+            width: 200,
+            height: 200,
+            padding: 5,
+            showOutline: true,
+            strokeAnimationSpeed: 1,
+            delayBetweenStrokes: 1000,
+            strokeColor: '#333',
+            outlineColor: '#DDD',
+            drawingColor: '#333',
+            drawingWidth: 4,
+            showHintAfterMisses: 3,
+            highlightOnComplete: true,
+            highlightColor: '#AAF'
+        });
+
+        // Store the writer instance globally for cleanup
+        window.currentWriter = writer;
+
+        // Add button handlers
+        const animateButton = content.querySelector('.animate-button');
+        const quizButton = content.querySelector('.quiz-button');
+
+        animateButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            writer.animateCharacter();
+        });
+
+        quizButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            writer.quiz({
+                showHintAfterMisses: 3,
+                onComplete: () => console.log('Quiz completed!'),
+                onMistake: (strokeData) => console.log('Mistake on stroke:', strokeData.strokeNum),
+                onCorrectStroke: (strokeData) => console.log('Correct stroke:', strokeData.strokeNum)
+            });
+        });
+
+        // Add close button handler
+        closeButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (window.currentWriter) {
+                window.postMessage({ type: 'cleanupWriter' }, '*');
+            }
+            popup.remove();
+        });
+
+        // Add click handler to close popup when clicking outside
+        const handleOutsideClick = (e) => {
+            if (!popup.contains(e.target) && !e.target.closest('.translation-popup')) {
+                if (window.currentWriter) {
+                    window.postMessage({ type: 'cleanupWriter' }, '*');
+                }
+                popup.remove();
+                document.removeEventListener('mousedown', handleOutsideClick);
+            }
+        };
+
+        // Add the click listener
+        document.addEventListener('mousedown', handleOutsideClick);
+
+        // Start initial animation
+        writer.animateCharacter();
+
+    } catch (error) {
+        console.error('Error in showStrokeOrderPopup:', error);
+        const popup = document.getElementById('strokeOrderPopup');
+        if (popup) {
+            popup.innerHTML = `
+                <div class="stroke-order-error">
+                    Unable to load stroke order animation
+                    <br>
+                    <small>${error.message}</small>
+                </div>
+            `;
+        }
+    }
+}
+
+// Add cleanup message handler
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'cleanupWriter' && window.currentWriter) {
+        delete window.currentWriter;
+    }
+});

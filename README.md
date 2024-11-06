@@ -33,7 +33,7 @@ A powerful Chrome extension that helps users learn Chinese by providing instant 
 ## Requirements
 
 - Google Chrome browser
-- API key for translation and audio services (see Configuration section)
+- OpenAI API key for translation and audio services (see Configuration section)
 
 ## Configuration
 

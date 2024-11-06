@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Text Translator and Pronouncer",
+  "version": "1.0",
+  "description": "Highlight sentences and get translation or pronunciation options.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://api.openai.com/"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"],
+      "css": ["contentScript.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Toggle Plugin"
+  },
+  "web_accessible_resources": [{
+    "resources": ["translation_popup.css"],
+    "matches": ["<all_urls>"]
+  }]
+} 

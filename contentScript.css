@@ -1,0 +1,33 @@
+#translator-popup {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 5px;
+    z-index: 10000;
+    border-radius: 5px;
+}
+
+#translator-popup button {
+    margin: 2px;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+#translator-popup button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#translationPopup {
+    background-color: white;
+    border: 1px solid black;
+    padding: 5px;
+    z-index: 1000;
+}
+
+#translationPopup button {
+    margin-right: 5px;
+}
+
+#translationResult {
+    margin-top: 5px;
+} 

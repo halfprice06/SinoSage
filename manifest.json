@@ -15,8 +15,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["lib/hanzi-writer.min.js", "contentScript.js"],
-      "css": ["contentScript.css"]
+      "js": ["lib/hanzi-writer.min.js", "contentScript.js"]
     }
   ],
   "background": {
@@ -29,7 +28,8 @@
   "web_accessible_resources": [{
     "resources": [
       "lib/hanzi-writer.min.js",
-      "translation_popup.css"
+      "translation_popup.css",
+      "data/dictionary.txt"
     ],
     "matches": ["<all_urls>"]
   }]

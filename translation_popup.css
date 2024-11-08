@@ -1,8 +1,9 @@
 .translation-popup {
-    position: fixed;
+    position: absolute;
     background-color: rgba(255, 255, 255, 0.99);
     border: none;
     padding: 20px;
+    padding-top: 34px;
     z-index: 1000;
     box-shadow: 
         0 6px 24px rgba(0,0,0,0.08),
@@ -14,6 +15,8 @@
     border-radius: 14px;
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,0.9);
+    cursor: default;
+    user-select: none;
 }
 
 #translation-container {
@@ -55,6 +58,7 @@
     position: relative;
     padding-bottom: 30px;
     cursor: default;
+    user-select: text;
 }
 
 .translation-item:hover {
@@ -79,6 +83,8 @@
     margin: 0 2px;
     text-align: center;
     min-width: 28px;
+    position: relative;
+    padding-bottom: 2px;
 }
 
 .chinese-char {
@@ -86,20 +92,51 @@
     line-height: 1.4;
     font-weight: normal;
     color: #1a202c;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
+    position: relative;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: linear-gradient(to bottom, transparent 0%, transparent 100%);
 }
 
 .chinese-char:hover {
     color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+    transform: translateY(-1px);
+}
+
+.chinese-char::after {
+    content: 'Click for details';
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(44, 62, 80, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 1002;
+}
+
+.chinese-char:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
 }
 
 .pinyin {
     font-family: "Noto Sans", "Arial Unicode MS", sans-serif;
-    font-size: 13px;
+    font-size: 16px;
     color: #64748b;
-    line-height: 1.3;
-    margin-top: 5px;
+    line-height: 1.4;
+    margin-top: 6px;
     font-weight: 500;
     letter-spacing: 0.02em;
 }
@@ -135,6 +172,7 @@
         inset 0 1px 4px rgba(0,0,0,0.01),
         0 1px 2px rgba(0,0,0,0.02);
     letter-spacing: 0.01em;
+    user-select: text;
 }
 
 .pagination-controls {
@@ -325,66 +363,163 @@
 }
 
 .stroke-order-popup {
-    position: fixed;
+    position: absolute;
     background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 
+        0 4px 24px rgba(0,0,0,0.12),
+        0 1px 2px rgba(0,0,0,0.08);
     z-index: 1001;
     border: 1px solid rgba(0,0,0,0.1);
+    min-width: 480px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    cursor: default;
+    user-select: none;
 }
 
 .stroke-order-content {
     display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.stroke-order-section {
+    flex: 1;
+    display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 16px;
+}
+
+.character-analysis-section {
+    flex: 1;
+    border-left: 1px solid rgba(0,0,0,0.1);
+    padding-left: 24px;
+}
+
+.stroke-order-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
 }
 
 #stroke-order-writer {
     width: 200px;
     height: 200px;
     border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 8px;
+    border-radius: 12px;
+    background: #fafafa;
 }
 
 .stroke-order-controls {
     display: flex;
-    gap: 10px;
+    gap: 12px;
 }
 
 .stroke-order-button {
     padding: 8px 16px;
     border: none;
-    border-radius: 6px;
-    background: #3498db;
+    border-radius: 8px;
+    background: linear-gradient(to bottom, #3498db, #2980b9);
     color: white;
     cursor: pointer;
     font-weight: 500;
     transition: all 0.2s ease;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .stroke-order-button:hover {
-    background: #2980b9;
+    background: linear-gradient(to bottom, #2980b9, #2573a7);
     transform: translateY(-1px);
 }
 
-.stroke-order-button:active {
-    transform: translateY(0);
+.stroke-order-close-button {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 2;
 }
 
-.stroke-order-error {
-    padding: 20px;
-    color: #e74c3c;
+.stroke-order-close-button:hover {
+    background: rgba(0,0,0,0.05);
+    color: #333;
+}
+
+.character-info {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.big-character {
+    font-size: 64px;
+    line-height: 1;
     text-align: center;
-    font-size: 14px;
+    color: #2c3e50;
+    margin-bottom: 16px;
 }
 
-.stroke-order-error small {
-    display: block;
-    margin-top: 8px;
-    color: #7f8c8d;
-    font-size: 12px;
+.character-details {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    user-select: text;
+    text-align: center;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.detail-label {
+    font-size: 14px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.detail-value {
+    font-size: 20px;
+    color: #2c3e50;
+    line-height: 1.5;
+}
+
+.etymology {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed rgba(0,0,0,0.1);
+    width: 100%;
+}
+
+.etymology .detail-value {
+    font-size: 18px;
+    font-style: italic;
+    color: #2c3e50;
+    line-height: 1.6;
+    max-width: 90%;
+    margin: 0 auto;
 }
 
 /* Add a class to hide elements */
@@ -455,4 +590,84 @@
     background: #a0aec0;
     box-shadow: none;
     transform: none;
+}
+
+/* Add a subtle pulse animation on first appearance */
+@keyframes subtle-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.chinese-char {
+    animation: subtle-pulse 2s ease-in-out;
+}
+
+/* Add a subtle glow effect */
+.chinese-char::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 8px;
+    background: radial-gradient(circle at center, rgba(52, 152, 219, 0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.chinese-char:hover::before {
+    opacity: 1;
+}
+
+/* Add these styles for the drag handle */
+.drag-handle {
+    height: 24px;
+    width: calc(100% + 40px);
+    background: linear-gradient(to right, #f8f9fa, #f1f3f5);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    cursor: move;
+    position: absolute;
+    top: 0;
+    left: -20px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    margin: 0;
+}
+
+.drag-handle::after {
+    content: '⋮⋮';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #94a3b8;
+    font-size: 12px;
+    letter-spacing: 2px;
+}
+
+/* Update popup styles to accommodate drag handle */
+.translation-popup {
+    /* ... existing styles ... */
+    cursor: default;
+    user-select: none; /* Prevent text selection while dragging */
+}
+
+.stroke-order-popup {
+    /* ... existing styles ... */
+    cursor: default;
+    user-select: none; /* Prevent text selection while dragging */
+}
+
+/* Make sure the close button in stroke order popup doesn't conflict with drag handle */
+.stroke-order-close-button {
+    z-index: 2;
+}
+
+/* Ensure content remains selectable */
+.translation-item,
+.character-details,
+.full-translation {
+    user-select: text;
 }

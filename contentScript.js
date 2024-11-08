@@ -67,32 +67,85 @@ function convertPinyinToToneMarks(pinyin) {
 }
 
 function positionPopup(popup, rect) {
-    // Get viewport dimensions
+    // Center the popup in the viewport horizontally
     const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Calculate popup dimensions after content is loaded
     const popupWidth = Math.min(
         popup.offsetWidth,
         parseInt(MAX_POPUP_WIDTH)
     );
     
-    // Center horizontally relative to the selection
-    const selectionCenter = rect.left + (rect.width / 2);
-    let leftPosition = selectionCenter - (popupWidth / 2);
+    // Center horizontally in viewport
+    let leftPosition = (viewportWidth - popupWidth) / 2;
     
-    // Ensure popup stays within viewport horizontally
-    leftPosition = Math.max(10, leftPosition); // At least 10px from left edge
-    leftPosition = Math.min(leftPosition, viewportWidth - popupWidth - 10); // At least 10px from right edge
+    // Ensure minimum margins
+    leftPosition = Math.max(10, leftPosition);
+    leftPosition = Math.min(leftPosition, viewportWidth - popupWidth - 10);
     
-    // Position vertically below the selection
-    // Add the current scroll position since we're using fixed positioning
-    let topPosition = rect.bottom + 5;
+    // Position vertically relative to the selection
+    // Use absolute positioning instead of fixed to move with scroll
+    let topPosition = window.pageYOffset + rect.bottom + 5;
 
-    // Set fixed positioning
-    popup.style.position = 'fixed';
+    // Set absolute positioning
+    popup.style.position = 'absolute';
     popup.style.left = `${leftPosition}px`;
     popup.style.top = `${topPosition}px`;
+}
+
+function makeDraggable(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    // Create drag handle
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'drag-handle';
+    element.insertBefore(dragHandle, element.firstChild);
+
+    // Track whether we're dragging
+    let isDragging = false;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        
+        // Get the mouse cursor position at startup
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        isDragging = true;
+
+        // Add the event listeners
+        document.addEventListener('mousemove', elementDrag);
+        document.addEventListener('mouseup', closeDragElement);
+    }
+
+    function elementDrag(e) {
+        if (!isDragging) return;
+        
+        e.preventDefault();
+        
+        // Calculate the new cursor position
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+
+        // Set the element's new position
+        const newTop = element.offsetTop - pos2;
+        const newLeft = element.offsetLeft - pos1;
+
+        // Keep popup within viewport bounds
+        const maxX = window.innerWidth - element.offsetWidth;
+        const maxY = window.innerHeight - element.offsetHeight;
+
+        element.style.top = `${Math.min(Math.max(0, newTop), maxY)}px`;
+        element.style.left = `${Math.min(Math.max(0, newLeft), maxX)}px`;
+    }
+
+    function closeDragElement() {
+        isDragging = false;
+        document.removeEventListener('mousemove', elementDrag);
+        document.removeEventListener('mouseup', closeDragElement);
+    }
+
+    // Add mousedown event listener to drag handle
+    dragHandle.addEventListener('mousedown', dragMouseDown);
 }
 
 function createPopup(selectedText, rect) {
@@ -137,6 +190,9 @@ function createPopup(selectedText, rect) {
     `;
 
     document.body.appendChild(popup);
+
+    // Make the popup draggable
+    makeDraggable(popup);
 
     // Initial positioning
     positionPopup(popup, rect);
@@ -561,10 +617,13 @@ function createPopup(selectedText, rect) {
 
 // Replace the existing mouseup event listener with this updated version
 document.addEventListener('mouseup', function (event) {
-    // Check if the selection is inside the translation popup
-    const existingPopup = document.getElementById('translationPopup');
-    if (existingPopup && existingPopup.contains(event.target)) {
-        return; // Don't create a new popup if selecting inside existing popup
+    // Check if the selection is inside either popup
+    const translationPopup = document.getElementById('translationPopup');
+    const strokeOrderPopup = document.getElementById('strokeOrderPopup');
+    
+    if ((translationPopup && translationPopup.contains(event.target)) || 
+        (strokeOrderPopup && strokeOrderPopup.contains(event.target))) {
+        return; // Don't create a new popup if selecting inside existing popups
     }
 
     setTimeout(function () {
@@ -720,6 +779,9 @@ async function showStrokeOrderPopup(character, rect) {
             existingPopup.remove();
         }
 
+        const mainPopup = document.getElementById('translationPopup');
+        if (!mainPopup) return;
+
         const popup = document.createElement('div');
         popup.id = 'strokeOrderPopup';
         popup.className = 'stroke-order-popup';
@@ -728,26 +790,43 @@ async function showStrokeOrderPopup(character, rect) {
         const closeButton = document.createElement('button');
         closeButton.className = 'stroke-order-close-button';
         closeButton.innerHTML = '×';
-        closeButton.style.cssText = `
-            position: absolute;
-            right: 5px;
-            top: 5px;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #666;
-            padding: 5px;
-        `;
         
+        // Create a flex container for stroke order and decomposition
         const content = document.createElement('div');
         content.className = 'stroke-order-content';
         
+        // Get character data from dictionary
+        const charData = dictionaryData[character] || {};
+        
         content.innerHTML = `
-            <div id="stroke-order-writer" style="width: 200px; height: 200px;"></div>
-            <div class="stroke-order-controls">
-                <button class="stroke-order-button animate-button">Animate Strokes</button>
-                <button class="stroke-order-button quiz-button">Practice Writing</button>
+            <div class="stroke-order-section">
+                <div class="stroke-order-title">Stroke Order</div>
+                <div id="stroke-order-writer"></div>
+                <div class="stroke-order-controls">
+                    <button class="stroke-order-button animate-button">Animate</button>
+                    <button class="stroke-order-button quiz-button">Practice</button>
+                </div>
+            </div>
+            <div class="character-analysis-section">
+                <div class="character-info">
+                    <div class="big-character">${character}</div>
+                    <div class="character-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Radical</span>
+                            <span class="detail-value">${charData.radical || '?'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Components</span>
+                            <span class="detail-value">${charData.decomposition || '?'}</span>
+                        </div>
+                        ${charData.etymology ? `
+                            <div class="detail-item etymology">
+                                <span class="detail-label">Etymology</span>
+                                <span class="detail-value">${charData.etymology.hint || ''}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
             </div>
         `;
         
@@ -755,15 +834,24 @@ async function showStrokeOrderPopup(character, rect) {
         popup.appendChild(content);
         document.body.appendChild(popup);
 
-        // Position the popup
-        const popupRect = popup.getBoundingClientRect();
-        const left = Math.min(
-            rect.left,
-            window.innerWidth - popupRect.width - 20
-        );
-        const top = rect.bottom + 10;
+        // Make the popup draggable
+        makeDraggable(popup);
 
-        popup.style.left = `${left}px`;
+        // Position the stroke order popup relative to the main popup
+        const mainPopupRect = mainPopup.getBoundingClientRect();
+        const popupRect = popup.getBoundingClientRect();
+
+        // Center the stroke order popup horizontally relative to the main popup
+        const left = mainPopupRect.left + (mainPopupRect.width - popupRect.width) / 2;
+        
+        // Position vertically below the clicked character
+        const top = window.pageYOffset + rect.bottom + 10;
+
+        // Ensure the popup stays within viewport bounds
+        const adjustedLeft = Math.max(10, Math.min(left, window.innerWidth - popupRect.width - 10));
+
+        popup.style.position = 'absolute';
+        popup.style.left = `${adjustedLeft}px`;
         popup.style.top = `${top}px`;
 
         // Create the writer instance
@@ -797,12 +885,7 @@ async function showStrokeOrderPopup(character, rect) {
 
         quizButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            writer.quiz({
-                showHintAfterMisses: 3,
-                onComplete: () => console.log('Quiz completed!'),
-                onMistake: (strokeData) => console.log('Mistake on stroke:', strokeData.strokeNum),
-                onCorrectStroke: (strokeData) => console.log('Correct stroke:', strokeData.strokeNum)
-            });
+            writer.quiz();
         });
 
         // Add close button handler
@@ -813,20 +896,6 @@ async function showStrokeOrderPopup(character, rect) {
             }
             popup.remove();
         });
-
-        // Add click handler to close popup when clicking outside
-        const handleOutsideClick = (e) => {
-            if (!popup.contains(e.target) && !e.target.closest('.translation-popup')) {
-                if (window.currentWriter) {
-                    window.postMessage({ type: 'cleanupWriter' }, '*');
-                }
-                popup.remove();
-                document.removeEventListener('mousedown', handleOutsideClick);
-            }
-        };
-
-        // Add the click listener
-        document.addEventListener('mousedown', handleOutsideClick);
 
         // Start initial animation
         writer.animateCharacter();
@@ -851,4 +920,56 @@ window.addEventListener('message', function(event) {
     if (event.data.type === 'cleanupWriter' && window.currentWriter) {
         delete window.currentWriter;
     }
+});
+
+// Function to load the dictionary data
+async function loadDictionaryData() {
+    const response = await fetch(chrome.runtime.getURL('data/dictionary.txt'));
+    const text = await response.text();
+    const lines = text.trim().split('\n');
+    const dictionary = {};
+    for (const line of lines) {
+        const entry = JSON.parse(line);
+        dictionary[entry.character] = entry;
+    }
+    return dictionary;
+}
+
+// Variable to store the dictionary data
+let dictionaryData = {};
+
+// Load the dictionary data when the script initializes
+loadDictionaryData().then(data => {
+    dictionaryData = data;
+});
+
+// Add scroll event listener to reposition popups when scrolling
+let scrollTimeout;
+window.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+        const mainPopup = document.getElementById('translationPopup');
+        const strokePopup = document.getElementById('strokeOrderPopup');
+        
+        if (mainPopup) {
+            // Update main popup position
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                positionPopup(mainPopup, rect);
+            }
+        }
+        
+        if (strokePopup && mainPopup) {
+            // Update stroke order popup position to maintain alignment with main popup
+            const mainPopupRect = mainPopup.getBoundingClientRect();
+            const strokePopupRect = strokePopup.getBoundingClientRect();
+            const left = mainPopupRect.left + (mainPopupRect.width - strokePopupRect.width) / 2;
+            const adjustedLeft = Math.max(10, Math.min(left, window.innerWidth - strokePopupRect.width - 10));
+            
+            strokePopup.style.left = `${adjustedLeft}px`;
+            strokePopup.style.top = `${window.pageYOffset + mainPopupRect.bottom + 10}px`;
+        }
+    }, 16); // Debounce scroll events
 });

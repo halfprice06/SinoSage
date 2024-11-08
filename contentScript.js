@@ -1,6 +1,5 @@
 const MAX_POPUP_WIDTH = '1000px';  // Maximum width for long content
 const MIN_POPUP_WIDTH = '300px';   // Minimum width for short content
-const IDEAL_ITEMS_PER_ROW = 5;     // Preferred number of items in a row before pagination
 const MIN_ITEMS_PER_PAGE = 3;      // Minimum items per page
 const DEFAULT_ITEMS_PER_PAGE = MIN_ITEMS_PER_PAGE;  // Default to minimum items per page
 const MAX_CHARS = 150;  // Maximum number of characters allowed for translation
@@ -207,8 +206,8 @@ function createPopup(selectedText, rect) {
             Math.floor(containerWidth / itemWidth)
         );
         
-        // Set items per page to be the calculated number
-        itemsPerPage = Math.min(itemsPerRow * 2, allTuples.length); // Show 2 rows worth of items
+        // Set items per page to be just one row worth of items (removed the * 2)
+        itemsPerPage = Math.min(itemsPerRow, allTuples.length);
         
         // Clean up test item
         container.innerHTML = '';

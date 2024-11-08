@@ -63,6 +63,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
           parameters: {
             type: "object",
             properties: {
+              full_translation: {
+                type: "string",
+                description: "Full English translation of the selected Chinese text"
+              },
               tuples: {
                 type: "array",
                 items: {
@@ -74,7 +78,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                     },
                     pinyin: {
                       type: "array",
-                      description: "Array of pinyin syllables, one for each character in the chinese string",
+                      description: "Array of pinyin syllables, one for each character in the Chinese string",
                       items: {
                         type: "string"
                       }
@@ -87,13 +91,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                   required: ["chinese", "pinyin", "english"],
                   additionalProperties: false
                 }
-              },
-              full_translation: {
-                type: "string",
-                description: "Full English translation of the selected Chinese text"
               }
             },
-            required: ["tuples", "full_translation"],
+            required: ["full_translation", "tuples"],
             additionalProperties: false
           }
         }

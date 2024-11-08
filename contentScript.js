@@ -1,6 +1,6 @@
 const MAX_POPUP_WIDTH = '1000px';  // Maximum width for long content
 const MIN_POPUP_WIDTH = '300px';   // Minimum width for short content
-const IDEAL_ITEMS_PER_ROW = 8;     // Preferred number of items in a row before pagination
+const IDEAL_ITEMS_PER_ROW = 5;     // Preferred number of items in a row before pagination
 const MIN_ITEMS_PER_PAGE = 3;      // Minimum items per page
 const DEFAULT_ITEMS_PER_PAGE = MIN_ITEMS_PER_PAGE;  // Default to minimum items per page
 const MAX_CHARS = 150;  // Maximum number of characters allowed for translation
@@ -126,7 +126,12 @@ function createPopup(selectedText, rect) {
             <button class="nav-button next">→</button>
         </div>
         <hr class="separator">
-        <div id="fullTranslation" class="full-translation"></div>
+        <div id="fullTranslationContainer" class="full-translation-container hidden">
+            <div id="fullTranslation" class="full-translation"></div>
+        </div>
+        <div style="text-align: center; margin-top: 10px;">
+            <button id="toggleFullTranslationButton" disabled>Loading full translation...</button>
+        </div>
         <div style="text-align: center; margin-top: 10px;">
             <button id="playAudioButton" disabled>Loading pronunciation...</button>
         </div>
@@ -259,10 +264,33 @@ function createPopup(selectedText, rect) {
         
         div.appendChild(chineseContainer);
         
+        // Create a container for the English translation, hidden initially
+        const englishContainer = document.createElement('div');
+        englishContainer.className = 'english-container hidden';
+
         const englishDiv = document.createElement('div');
         englishDiv.className = 'english';
         englishDiv.textContent = tuple.english;
-        div.appendChild(englishDiv);
+        englishContainer.appendChild(englishDiv);
+        div.appendChild(englishContainer);
+
+        // Add a button to reveal the translation
+        const revealButton = document.createElement('button');
+        revealButton.className = 'reveal-button';
+        revealButton.textContent = 'Show Translation';
+        div.appendChild(revealButton);
+
+        // Add click event listener to toggle the English translation visibility
+        revealButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            if (englishContainer.classList.contains('hidden')) {
+                englishContainer.classList.remove('hidden');
+                revealButton.textContent = 'Hide Translation';
+            } else {
+                englishContainer.classList.add('hidden');
+                revealButton.textContent = 'Show Translation';
+            }
+        });
 
         // Add speaker button container
         const buttonContainer = document.createElement('div');
@@ -465,12 +493,27 @@ function createPopup(selectedText, rect) {
                 
                 updatePagination(translationData);
                 
-                // Update the full translation with quotes
+                // Update the full translation and hide it initially
                 const fullTranslationDiv = document.getElementById('fullTranslation');
-                if (fullTranslationDiv) {
+                if (fullTranslationDiv && toggleFullTranslationButton && fullTranslationContainer) {
                     fullTranslationDiv.innerHTML = `"${translationData.full_translation}"`;
                     fullTranslationDiv.style.display = 'block';
+                    fullTranslationContainer.classList.add('hidden'); // Ensure it's hidden initially
+                    toggleFullTranslationButton.textContent = 'Show Full Translation';
+                    toggleFullTranslationButton.disabled = false;
                 }
+
+                // Add click event listener to toggle the full translation visibility
+                toggleFullTranslationButton.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
+                    if (fullTranslationContainer.classList.contains('hidden')) {
+                        fullTranslationContainer.classList.remove('hidden');
+                        toggleFullTranslationButton.textContent = 'Hide Full Translation';
+                    } else {
+                        fullTranslationContainer.classList.add('hidden');
+                        toggleFullTranslationButton.textContent = 'Show Full Translation';
+                    }
+                });
             } else {
                 popup.innerHTML = 'Error: ' + (response ? response.error : 'Unknown error');
             }

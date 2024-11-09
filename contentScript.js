@@ -798,10 +798,37 @@ async function showStrokeOrderPopup(character, rect) {
         // Get character data from dictionary
         const charData = dictionaryData[character] || {};
         
+        // Format components with pinyin
+        let componentsHTML = '';
+        if (charData.decomposition) {
+            componentsHTML = charData.decomposition.split('').map(char => {
+                // Special case for the empty square
+                if (char === '□') {
+                    return `
+                        <div class="component-char empty-square">
+                            <span>${char}</span>
+                        </div>
+                    `;
+                }
+                
+                const componentData = dictionaryData[char] || {};
+                const pinyin = componentData.pinyin ? convertPinyinToToneMarks(componentData.pinyin[0]) : '';
+                return `
+                    <div class="component-char">
+                        <span>${char}</span>
+                        <span class="component-pinyin">${pinyin}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
         content.innerHTML = `
             <div class="stroke-order-section">
                 <div class="stroke-order-title">Stroke Order</div>
                 <div id="stroke-order-writer"></div>
+                <div class="stroke-order-pinyin">
+                    ${charData.pinyin ? convertPinyinToToneMarks(charData.pinyin[0]) : ''}
+                </div>
                 <div class="stroke-order-controls">
                     <button class="stroke-order-button animate-button">Animate</button>
                     <button class="stroke-order-button quiz-button">Practice</button>
@@ -817,7 +844,7 @@ async function showStrokeOrderPopup(character, rect) {
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Components</span>
-                            <span class="detail-value">${charData.decomposition || '?'}</span>
+                            <span class="detail-value">${componentsHTML || '?'}</span>
                         </div>
                         ${charData.etymology ? `
                             <div class="detail-item etymology">

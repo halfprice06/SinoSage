@@ -390,7 +390,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 }
 
 .character-analysis-section {
@@ -412,6 +412,7 @@
     border: 1px solid rgba(0,0,0,0.1);
     border-radius: 12px;
     background: #fafafa;
+    margin-bottom: 0;
 }
 
 .stroke-order-controls {
@@ -504,6 +505,10 @@
     font-size: 20px;
     color: #2c3e50;
     line-height: 1.5;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
 }
 
 .etymology {
@@ -670,4 +675,48 @@
 .character-details,
 .full-translation {
     user-select: text;
+}
+
+/* Add styles for the pinyin in components */
+.component-char {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-height: 45px; /* Add minimum height to ensure consistent spacing */
+}
+
+.component-pinyin {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: normal;
+}
+
+/* Add styles for the pinyin under stroke order */
+.stroke-order-pinyin {
+    font-size: 24px;
+    color: #64748b;
+    text-align: center;
+    margin: 12px 0;
+    font-weight: 500;
+    font-family: "Noto Sans", "Arial Unicode MS", sans-serif;
+}
+
+/* Adjust spacing in stroke order section */
+.stroke-order-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+#stroke-order-writer {
+    margin-bottom: 0; /* Remove any existing bottom margin */
+}
+
+/* Add specific styling for the empty square component */
+.component-char.empty-square {
+    min-height: unset; /* Remove minimum height for empty square */
+    margin-top: 4px; /* Align with the top of other characters */
 }

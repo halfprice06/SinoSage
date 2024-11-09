@@ -13,6 +13,8 @@ let itemsPerPage = DEFAULT_ITEMS_PER_PAGE;
 let currentPages = []; // Store all pages
 let currentPageIndex = 0;
 
+let audioData = null; // Add this at the top level of your script
+
 const cssLink = document.createElement('link');
 cssLink.rel = 'stylesheet';
 cssLink.type = 'text/css';
@@ -208,40 +210,23 @@ function createPopup(selectedText, rect) {
         attributes: true
     });
 
-    // Get reference to the play button
+    // Add the play button event listener after the button is created
     const playButton = document.getElementById('playAudioButton');
-    let audioUrl = null;
-
-    // Add a single event listener for the play button
-    playButton.addEventListener('click', function (event) {
-        // Prevent default behavior
-        event.preventDefault();
-        // Stop event from bubbling up
-        event.stopPropagation();
-        // Stop immediate propagation to ensure no other handlers run
-        event.stopImmediatePropagation();
-        
-        if (audioUrl) {
-            const audio = new Audio(audioUrl);
-            audio.play().catch((error) => {
-                console.error('Audio playback error:', error);
-                alert('Error playing audio: ' + error.message);
-            });
-        }
-    });
-
-    // Also add mouseup and mousedown prevention
-    playButton.addEventListener('mouseup', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-    });
-
-    playButton.addEventListener('mousedown', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-    });
+    if (playButton) {
+        playButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            
+            if (audioData) {
+                playAudioWithFallback(audioData)
+                    .catch((error) => {
+                        console.error('Playback failed:', error);
+                        alert('Unable to play audio. This website may block audio playback.');
+                    });
+            }
+        });
+    }
 
     // Add pagination functionality
     function updatePagination(translationData) {
@@ -359,13 +344,12 @@ function createPopup(selectedText, rect) {
         buttonContainer.appendChild(speakerButton);
         div.appendChild(buttonContainer);
 
-        // Add click event listener to the speaker button
+        // Add speaker button event listener within the context where tuple is defined
         speakerButton.addEventListener('click', function(event) {
             event.stopPropagation();
             
-            // Visual feedback - disable button and show loading state
             speakerButton.disabled = true;
-            speakerButton.innerHTML = '⌛'; // Hour glass icon for loading state
+            speakerButton.innerHTML = '⌛';
             
             chrome.runtime.sendMessage(
                 {
@@ -374,22 +358,19 @@ function createPopup(selectedText, rect) {
                 },
                 function(response) {
                     if (response && response.success) {
-                        const audioUrl = 'data:audio/wav;base64,' + response.data;
-                        const audio = new Audio(audioUrl);
-                        
-                        audio.onended = () => {
-                            speakerButton.disabled = false;
-                            speakerButton.innerHTML = '🔊';
-                        };
-                        
-                        audio.play().catch((error) => {
-                            console.error('Audio playback error:', error);
-                            speakerButton.disabled = false;
-                            speakerButton.innerHTML = '❌';
-                            setTimeout(() => {
+                        playAudioWithFallback(response.data)
+                            .then(() => {
+                                speakerButton.disabled = false;
                                 speakerButton.innerHTML = '🔊';
-                            }, 1000);
-                        });
+                            })
+                            .catch((error) => {
+                                console.error('Playback failed:', error);
+                                speakerButton.disabled = false;
+                                speakerButton.innerHTML = '❌';
+                                setTimeout(() => {
+                                    speakerButton.innerHTML = '🔊';
+                                }, 1000);
+                            });
                     } else {
                         console.error('Error getting audio:', response ? response.error : 'Unknown error');
                         speakerButton.disabled = false;
@@ -582,14 +563,8 @@ function createPopup(selectedText, rect) {
             text: selectedText,
         },
         function(response) {
-            if (chrome.runtime.lastError) {
-                console.error('Runtime error:', chrome.runtime.lastError);
-                playButton.textContent = 'Error loading audio';
-                return;
-            }
-
             if (response && response.success) {
-                audioUrl = 'data:audio/wav;base64,' + response.data;
+                audioData = response.data; // Store the audio data
                 playButton.disabled = false;
                 playButton.textContent = 'Play Pronunciation';
             } else {
@@ -629,15 +604,15 @@ document.addEventListener('mouseup', function (event) {
     setTimeout(function () {
         let selectedText = window.getSelection().toString().trim();
         
-        // Check if the first character is Chinese
-        if (selectedText.length > 0 && !CHINESE_REGEX.test(selectedText[0])) {
+        // Check if text contains any Chinese characters
+        if (selectedText.length > 0 && !CHINESE_REGEX.test(selectedText)) {
             let alertPopup = document.createElement('div');
             alertPopup.className = 'translation-popup';
             alertPopup.style.padding = '15px';
             alertPopup.style.textAlign = 'center';
             alertPopup.innerHTML = `
                 <div style="color: #ff4444;">
-                    Please select text that begins with Chinese characters.
+                    Please select text that contains Chinese characters.
                 </div>
             `;
 
@@ -836,11 +811,13 @@ async function showStrokeOrderPopup(character, rect) {
             </div>
             <div class="character-analysis-section">
                 <div class="character-info">
-                    <div class="big-character">${character}</div>
                     <div class="character-details">
                         <div class="detail-item">
                             <span class="detail-label">Radical</span>
-                            <span class="detail-value">${charData.radical || '?'}</span>
+                            <div class="detail-value">
+                                <span>${charData.radical || '?'}</span>
+                                <span class="component-pinyin">${charData.radical ? (dictionaryData[charData.radical]?.pinyin ? convertPinyinToToneMarks(dictionaryData[charData.radical].pinyin[0]) : '') : ''}</span>
+                            </div>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Components</span>
@@ -1000,3 +977,114 @@ window.addEventListener('scroll', () => {
         }
     }, 16); // Debounce scroll events
 });
+
+// Update the audio playback logic to use a Blob URL instead of data URL
+function playAudio(base64Audio) {
+    try {
+        // Convert base64 to blob
+        const binaryString = window.atob(base64Audio);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const audioBlob = new Blob([bytes], { type: 'audio/wav' });
+        
+        // Create blob URL
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Create and play audio
+        const audio = new Audio(audioUrl);
+        
+        // Clean up blob URL after playback
+        audio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+        };
+
+        // Handle errors
+        audio.onerror = (error) => {
+            console.error('Audio playback error:', error);
+            URL.revokeObjectURL(audioUrl);
+        };
+
+        // Start playback
+        return audio.play().catch((error) => {
+            console.error('Audio playback error:', error);
+            URL.revokeObjectURL(audioUrl);
+            throw error;
+        });
+    } catch (error) {
+        console.error('Error creating audio:', error);
+        throw error;
+    }
+}
+
+
+
+// New audio playback function with fallback methods
+async function playAudioWithFallback(base64Audio) {
+    try {
+        // First try Web Audio API approach
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const binaryString = window.atob(base64Audio);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContext.destination);
+        source.start(0);
+
+        return new Promise((resolve) => {
+            source.onended = () => {
+                resolve();
+                audioContext.close();
+            };
+        });
+    } catch (error) {
+        console.warn('Web Audio API playback failed, trying Audio element:', error);
+        
+        // Fallback to Audio element with base64 URL
+        try {
+            const audio = new Audio(`data:audio/wav;base64,${base64Audio}`);
+            return audio.play();
+        } catch (error2) {
+            console.warn('Audio element with base64 URL failed, trying Blob URL:', error2);
+            
+            // Final fallback to Blob URL
+            try {
+                const binaryString = window.atob(base64Audio);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                const audioBlob = new Blob([bytes], { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                
+                return new Promise((resolve, reject) => {
+                    audio.onended = () => {
+                        URL.revokeObjectURL(audioUrl);
+                        resolve();
+                    };
+                    
+                    audio.onerror = (error) => {
+                        URL.revokeObjectURL(audioUrl);
+                        reject(error);
+                    };
+                    
+                    audio.play().catch((error) => {
+                        URL.revokeObjectURL(audioUrl);
+                        reject(error);
+                    });
+                });
+            } catch (error3) {
+                console.error('All audio playback methods failed:', error3);
+                throw new Error('Audio playback is not supported on this website');
+            }
+        }
+    }
+}

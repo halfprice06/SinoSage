@@ -2,7 +2,7 @@
 
 This Chrome extension allows you to select Chinese text on any webpage and get instant translation, pronunciation, and stroke order animations. It is designed to assist users in learning Mandarin by providing detailed translations, pinyin with tone marks, and interactive stroke order demonstrations.
 
-![Alt text](images/my-image.png)
+![Alt text](ss1.png)![Alt Text](ss2.png)
 
 ## KNOWN BUGS
 
